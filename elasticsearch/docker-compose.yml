@@ -1,0 +1,22 @@
+version: '3.8'
+
+services:
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.15.3
+    container_name: es
+    environment:
+      - discovery.type=single-node
+      - ES_JAVA_OPTS=-Xms512m -Xmx512m
+      - network.host=0.0.0.0
+      - xpack.security.enabled=false
+    ports: []  # no expone el puerto fuera del contenedor
+    volumes:
+      - es_data:/usr/share/elasticsearch/data
+    networks:
+      - data-storage-manager
+
+volumes:
+  es_data:
+
+networks:
+  data-storage-manager:
