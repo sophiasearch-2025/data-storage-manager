@@ -9,7 +9,8 @@ services:
       - ES_JAVA_OPTS=-Xms512m -Xmx512m
       - network.host=0.0.0.0
       - xpack.security.enabled=false
-    ports: []  # no expone el puerto fuera del contenedor
+    ports: 
+      - "9200:9200"
     volumes:
       - es_data:/usr/share/elasticsearch/data
     networks:
