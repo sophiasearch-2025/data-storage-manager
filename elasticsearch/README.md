@@ -1,11 +1,12 @@
 # ElasticSearch en data-storage-manager
 
-Este repositorio contiene la configuración para levantar ElasticSearch usando Docker.
+Este repositorio contiene la configuración para levantar ElasticSearch usando Docker y cargar datos de prueba.
 
 ## Requisitos
 
 * Docker >= 20
 * Docker Compose >= 1.29
+* Python 3 + pip (para ejecutar scripts de indexación)
 
 ## Instalación de Docker y Docker Compose (Linux / Ubuntu)
 
@@ -44,6 +45,8 @@ cd elasticsearch
 docker-compose up -d
 ```
 
+* El puerto 9200 está expuesto para poder conectarse desde scripts Python (`localhost:9200`).
+
 3. Verificar que está corriendo:
 
 ```bash
@@ -52,7 +55,7 @@ docker ps
 docker-compose ps
 ```
 
-4. Probar ElasticSearch (si tienes puerto expuesto):
+4. Probar ElasticSearch:
 
 ```bash
 curl http://localhost:9200
@@ -64,12 +67,43 @@ curl http://localhost:9200
 docker-compose down
 ```
 
+## Indexar datos en ElasticSearch
+
+1. Entrar a la carpeta de scripts:
+
+```bash
+cd ../scripts
+```
+
+2. Crear un entorno virtual (recomendado):
+
+```bash
+python3 -m venv venv
+source venv/bin/activate
+```
+
+3. Instalar dependencias:
+
+```bash
+pip install -r requirements.txt
+```
+
+4. Ejecutar script de indexación:
+
+```bash
+python index_random_news.py
+```
+
+* Esto indexa datos de prueba en el índice `noticias`.
+* Para indexar CSV reales, usar el script correspondiente (`index_data.py`) siguiendo la misma lógica.
+
+5. Salir del entorno virtual:
+
+```bash
+deactivate
+```
+
 ## Notas
 
-* Los datos se guardan en el volumen `es_data`.
-* Para desarrollo local, puedes exponer el puerto 9200 agregando temporalmente en docker-compose:
-
-```yaml
-ports:
-  - "9200:9200"
-```
+* Los datos de ElasticSearch se guardan en el volumen `es_data`.
+* Mantener el puerto 9200 expuesto para que scripts Python se conecten al contenedor.
