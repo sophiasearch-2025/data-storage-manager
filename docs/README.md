@@ -2,7 +2,7 @@
 
 > Este subsistema se encarga de gestionar la base de datos de Sophia Search con la información recopilada por el subsistema de Recopilación de Datos
 
-![Badge de Estado del Proyecto](https://img.shields.io/badge/ESTADO-EN%20DESARROLLO-yellow)
+
 ## 📋 Tabla de Contenidos
 
 * [Interaccion con otros subsistemas](#interaccion-subsistemas)
@@ -27,6 +27,6 @@ Enlace a los documentos principales del subsistema:
 )   
 
 ## 🛠️ Estado del subsistema
+- Listo para pruebas
 
-- 
 
