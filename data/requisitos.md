@@ -1,0 +1,5 @@
+### Prerequisitos
+
+- Docker
+- Docker Compose
+
