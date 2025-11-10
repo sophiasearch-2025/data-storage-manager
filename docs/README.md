@@ -6,14 +6,8 @@
 ## 📋 Tabla de Contenidos
 
 * [Interaccion con otros subsistemas](#interaccion-subsistemas)
-* [Características](#características)
-* [Tecnologías Utilizadas](#tecnologías-utilizadas)
-* [Instalación](#instalación)
-* [Uso](#uso)
-* [Contribuciones](#contribuciones)
-* [Licencia](#licencia)
-* [Contacto](#contacto)
-
+* [Documentacion Interna] (#documentacion-interna)
+* [Estado Subsistema] (#estado-subsistema)
 ---
 
 ## 💡 Interaccion con otros subsistemas
@@ -30,18 +24,9 @@ Enlace a los documentos principales del subsistema:
 - [Requisitos] (./requisitos.md)
 - [Despliegue] (./deploy.md)
 - [Diagramas] (./diagramas
-)
+)   
 
 ## 🛠️ Estado del subsistema
 
 - 
-
-## ⚙️ Instalación
-
-Describe los pasos necesarios para que alguien más pueda configurar y ejecutar tu proyecto en su propia máquina.
-
-### Requisitos Previos
-
-* [Python 3.10+](https://www.python.org/downloads/)
-* [Pip (administrador de paquetes)](https://pip.pypa.io/en/stable/installation/)
 
