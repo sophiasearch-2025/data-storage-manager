@@ -1,6 +1,6 @@
-🧭 Instrucciones de ejecución
+#🧭 Instrucciones de ejecución
 
-1️⃣ Crear la base de datos en PostgreSQL
+##1️⃣ Crear la base de datos en PostgreSQL
 
 CREATE DATABASE nombre_de_tu_base;
 
@@ -35,4 +35,5 @@ python cargar_dataset.py
 
 SELECT COUNT(*) FROM noticia;
 SELECT COUNT(*) FROM medios_prensa;
+
 SELECT COUNT(*) FROM noticia_detalle;
