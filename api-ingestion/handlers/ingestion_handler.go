@@ -8,6 +8,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/newspress/api-ingestion/models"
 	"github.com/newspress/api-ingestion/services"
+	"github.com/newspress/api-ingestion/utils"
 )
 
 type IngestionHandler struct {
@@ -31,19 +32,20 @@ func (h *IngestionHandler) IngestNews(c *gin.Context) {
 
 	jobID := uuid.New().String()
 
+	// El mensaje se envía con el formato original del scraper
 	message := map[string]interface{}{
-		"job_id":             jobID,
-		"url":                req.URL,
-		"title":              req.Title,
-		"content":            req.Content,
-		"abstract":           req.Abstract,
-		"author":             req.Author,
-		"author_description": req.AuthorDescription,
-		"media_outlet":       req.MediaOutlet,
-		"country":            req.Country,
-		"published_date":     req.PublishedDate,
-		"multimedia":         req.Multimedia,
-		"received_at":        time.Now(),
+		"job_id":          jobID,
+		"url":             req.URL,
+		"titulo":          req.Titulo,
+		"fecha":           req.Fecha, // En formato español
+		"tags":            req.Tags,
+		"autor":           req.Autor,
+		"desc_autor":      req.DescAutor,
+		"abstract":        req.Abstract,
+		"cuerpo":          req.Cuerpo,
+		"multimedia":      req.Multimedia,
+		"tipo_multimedia": req.TipoMultimedia,
+		"received_at":     time.Now(),
 	}
 
 	if err := h.rabbitMQ.PublishNews(message); err != nil {

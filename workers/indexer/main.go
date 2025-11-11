@@ -8,6 +8,8 @@ import (
 	"fmt"
 	"log"
 	"net/url"
+	"regexp"
+	"strconv"
 	"strings"
 	"time"
 
@@ -16,19 +18,20 @@ import (
 	"github.com/streadway/amqp"
 )
 
+// NewsMessage - Formato del scraper (campos en español)
 type NewsMessage struct {
-	JobID             string    `json:"job_id"`
-	URL               string    `json:"url"`
-	Title             string    `json:"title"`
-	Content           string    `json:"content"`
-	Abstract          string    `json:"abstract"`
-	Author            string    `json:"author"`
-	AuthorDescription string    `json:"author_description"`
-	MediaOutlet       string    `json:"media_outlet"`
-	Country           string    `json:"country"`
-	PublishedDate     time.Time `json:"published_date"`
-	Multimedia        []string  `json:"multimedia"`
-	ReceivedAt        time.Time `json:"received_at"`
+	JobID          string   `json:"job_id"`
+	URL            string   `json:"url"`
+	Titulo         string   `json:"titulo"`
+	Fecha          string   `json:"fecha"` // Spanish date format
+	Tags           []string `json:"tags"`
+	Autor          string   `json:"autor"`
+	DescAutor      string   `json:"desc_autor"`
+	Abstract       string   `json:"abstract"`
+	Cuerpo         string   `json:"cuerpo"`
+	Multimedia     []string `json:"multimedia"`
+	TipoMultimedia string   `json:"tipo_multimedia"`
+	ReceivedAt     time.Time `json:"received_at"`
 }
 
 type Indexer struct {
@@ -37,6 +40,15 @@ type Indexer struct {
 	channel *amqp.Channel
 	config  *common.Config
 }
+
+var (
+	spanishMonths = map[string]int{
+		"enero": 1, "febrero": 2, "marzo": 3, "abril": 4,
+		"mayo": 5, "junio": 6, "julio": 7, "agosto": 8,
+		"septiembre": 9, "octubre": 10, "noviembre": 11, "diciembre": 12,
+	}
+	spanishDatePattern = regexp.MustCompile(`(?i)(?:lunes|martes|miércoles|jueves|viernes|sábado|domingo)?\s*(\d{1,2})\s+(\w+)\s+de\s+(\d{4})\s*\|\s*(\d{1,2}):(\d{2})`)
+)
 
 func NewIndexer(cfg *common.Config) (*Indexer, error) {
 	db, err := sql.Open("postgres", cfg.GetPostgresConnectionString())
@@ -76,6 +88,49 @@ func NewIndexer(cfg *common.Config) (*Indexer, error) {
 		channel: ch,
 		config:  cfg,
 	}, nil
+}
+
+// parseSpanishDate convierte fecha española a time.Time
+// Ejemplo: "Martes 16 septiembre de 2025 | 23:01" -> time.Time
+func (idx *Indexer) parseSpanishDate(dateStr string) (time.Time, error) {
+	dateStr = strings.TrimSpace(dateStr)
+
+	matches := spanishDatePattern.FindStringSubmatch(dateStr)
+	if len(matches) == 6 {
+		day, _ := strconv.Atoi(matches[1])
+		monthStr := strings.ToLower(matches[2])
+		year, _ := strconv.Atoi(matches[3])
+		hour, _ := strconv.Atoi(matches[4])
+		minute, _ := strconv.Atoi(matches[5])
+
+		month, exists := spanishMonths[monthStr]
+		if !exists {
+			return time.Time{}, fmt.Errorf("mes no reconocido: %s", monthStr)
+		}
+
+		// Zona horaria de Chile (UTC-3/-4)
+		loc, _ := time.LoadLocation("America/Santiago")
+		date := time.Date(year, time.Month(month), day, hour, minute, 0, 0, loc)
+		return date, nil
+	}
+
+	return time.Time{}, fmt.Errorf("formato de fecha no reconocido: %s", dateStr)
+}
+
+// extractMediaOutlet extrae el medio desde la URL
+func (idx *Indexer) extractMediaOutlet(rawURL string) string {
+	parsed, err := url.Parse(rawURL)
+	if err != nil {
+		return "unknown"
+	}
+
+	domain := strings.TrimPrefix(parsed.Host, "www.")
+	parts := strings.Split(domain, ".")
+	if len(parts) > 0 {
+		return parts[0]
+	}
+
+	return "unknown"
 }
 
 func (idx *Indexer) normalizeURL(rawURL string) (string, error) {
@@ -120,7 +175,25 @@ func (idx *Indexer) getOrCreateMediaSource(name, country string) (string, error)
 	return sourceID, err
 }
 
-func (idx *Indexer) saveNews(msg NewsMessage, urlHash, contentHash, mediaSourceID string) (string, error) {
+func (idx *Indexer) getOrCreateTag(tagName string) (string, error) {
+	var tagID string
+
+	err := idx.db.QueryRow(
+		"SELECT id FROM tags WHERE name = $1",
+		tagName,
+	).Scan(&tagID)
+
+	if err == sql.ErrNoRows {
+		err = idx.db.QueryRow(
+			"INSERT INTO tags (name) VALUES ($1) RETURNING id",
+			tagName,
+		).Scan(&tagID)
+	}
+
+	return tagID, err
+}
+
+func (idx *Indexer) saveNews(msg NewsMessage, urlHash, contentHash, mediaSourceID string, publishedDate time.Time) (string, error) {
 	var newsID string
 
 	err := idx.db.QueryRow(`
@@ -129,22 +202,46 @@ func (idx *Indexer) saveNews(msg NewsMessage, urlHash, contentHash, mediaSourceI
 			media_source_id, published_date, url, url_hash, content_hash, status
 		) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
 		RETURNING id
-	`, msg.Title, msg.Content, msg.Abstract, msg.Author, msg.AuthorDescription,
-		mediaSourceID, msg.PublishedDate, msg.URL, urlHash, contentHash, "indexed").Scan(&newsID)
+	`, msg.Titulo, msg.Cuerpo, msg.Abstract, msg.Autor, msg.DescAutor,
+		mediaSourceID, publishedDate, msg.URL, urlHash, contentHash, "indexed").Scan(&newsID)
 
 	if err != nil {
 		return "", err
 	}
 
-	// Guardar multimedia
+	// Guardar multimedia con tipo
+	mediaType := msg.TipoMultimedia
+	if mediaType == "" {
+		mediaType = "imagen"
+	}
+
 	for _, mediaURL := range msg.Multimedia {
 		_, err := idx.db.Exec(`
 			INSERT INTO news_multimedia (news_id, url, media_type)
 			VALUES ($1, $2, $3)
-		`, newsID, mediaURL, "image")
+		`, newsID, mediaURL, mediaType)
 
 		if err != nil {
 			log.Printf("⚠ Warning: failed to insert multimedia: %v", err)
+		}
+	}
+
+	// Guardar tags
+	for _, tagName := range msg.Tags {
+		tagID, err := idx.getOrCreateTag(tagName)
+		if err != nil {
+			log.Printf("⚠ Warning: failed to get/create tag '%s': %v", tagName, err)
+			continue
+		}
+
+		_, err = idx.db.Exec(`
+			INSERT INTO news_tags (news_id, tag_id)
+			VALUES ($1, $2)
+			ON CONFLICT DO NOTHING
+		`, newsID, tagID)
+
+		if err != nil {
+			log.Printf("⚠ Warning: failed to associate tag '%s': %v", tagName, err)
 		}
 	}
 
@@ -171,9 +268,17 @@ func (idx *Indexer) processMessage(msg amqp.Delivery) error {
 	}
 	news.URL = normalizedURL
 
+	// Parsear fecha española
+	publishedDate, err := idx.parseSpanishDate(news.Fecha)
+	if err != nil {
+		log.Printf("Failed to parse date '%s': %v", news.Fecha, err)
+		msg.Nack(false, false)
+		return err
+	}
+
 	// Generar hashes
 	urlHash := idx.generateHash(normalizedURL)
-	contentHash := idx.generateHash(news.Title + news.Content)
+	contentHash := idx.generateHash(news.Titulo + news.Cuerpo)
 
 	// Verificar duplicados
 	duplicate, err := idx.isDuplicate(urlHash)
@@ -189,8 +294,12 @@ func (idx *Indexer) processMessage(msg amqp.Delivery) error {
 		return nil
 	}
 
+	// Extraer media outlet de la URL
+	mediaOutlet := idx.extractMediaOutlet(news.URL)
+	country := "chile" // Default
+
 	// Obtener o crear media source
-	mediaSourceID, err := idx.getOrCreateMediaSource(news.MediaOutlet, news.Country)
+	mediaSourceID, err := idx.getOrCreateMediaSource(mediaOutlet, country)
 	if err != nil {
 		log.Printf("Failed to get/create media source: %v", err)
 		msg.Nack(false, true)
@@ -198,14 +307,14 @@ func (idx *Indexer) processMessage(msg amqp.Delivery) error {
 	}
 
 	// Guardar noticia
-	newsID, err := idx.saveNews(news, urlHash, contentHash, mediaSourceID)
+	newsID, err := idx.saveNews(news, urlHash, contentHash, mediaSourceID, publishedDate)
 	if err != nil {
 		log.Printf("Failed to save news: %v", err)
 		msg.Nack(false, true)
 		return err
 	}
 
-	log.Printf("News saved to PostgreSQL with ID: %s", newsID)
+	log.Printf("✓ News saved to PostgreSQL with ID: %s", newsID)
 
 	// Publicar a sync_queue para Elasticsearch
 	syncMessage := map[string]interface{}{

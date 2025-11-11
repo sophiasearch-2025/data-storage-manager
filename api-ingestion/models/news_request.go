@@ -1,18 +1,17 @@
 package models
 
-import "time"
-
+// NewsRequest - Formato directo del scraper (campos en español)
 type NewsRequest struct {
-	URL               string    `json:"url" binding:"required"`
-	Title             string    `json:"title" binding:"required"`
-	Content           string    `json:"content" binding:"required"`
-	Abstract          string    `json:"abstract"`
-	Author            string    `json:"author"`
-	AuthorDescription string    `json:"author_description"`
-	MediaOutlet       string    `json:"media_outlet" binding:"required"`
-	Country           string    `json:"country" binding:"required"`
-	PublishedDate     time.Time `json:"published_date" binding:"required"`
-	Multimedia        []string  `json:"multimedia"`
+	URL            string   `json:"url" binding:"required"`
+	Titulo         string   `json:"titulo" binding:"required"`
+	Fecha          string   `json:"fecha" binding:"required"` // Spanish date: "Martes 16 septiembre de 2025 | 23:01"
+	Tags           []string `json:"tags"`
+	Autor          string   `json:"autor"`
+	DescAutor      string   `json:"desc_autor"`
+	Abstract       string   `json:"abstract"`
+	Cuerpo         string   `json:"cuerpo" binding:"required"`
+	Multimedia     []string `json:"multimedia"`
+	TipoMultimedia string   `json:"tipo_multimedia"`
 }
 
 type NewsResponse struct {
