@@ -1,33 +1,54 @@
+# 🚀 Despliegue y Operación
+
+Este sistema está diseñado para ser desplegado fácilmente utilizando Docker Compose.
+
+## 🛠️ Inicio Rápido
+
+### Prerequisitos
+
+Estos requisitos son necesarios para levantar el sistema de forma local:
+
+* **Docker**
+* **Docker Compose** (Plugin)
+
 ### Levantar el sistema
 
-```bash
-# 1. Clonar variables de entorno
-cp .env.example .env
+1.  **Clonar variables de entorno:** Copia el archivo de ejemplo para crear tu configuración local.
+    ```bash
+    cp .env.example .env
+    ```
 
-# 2. Iniciar todos los servicios
-docker-compose up -d
+2.  **Iniciar todos los servicios:**
+    ```bash
+    docker compose up -d
+    ```
 
-# 3. Verificar que todos los servicios estén corriendo
-docker-compose ps
-```
+3.  **Verificar que todos los servicios estén corriendo:**
+    ```bash
+    docker compose ps
+    ```
 
 ### Orden de Inicio
 
-El sistema se inicia automáticamente en el orden correcto:
+El `docker-compose.yml` maneja automáticamente la dependencia de los servicios, asegurando el orden correcto:
 
-1. Infraestructura (postgres, elasticsearch, rabbitmq)
-2. Migrator (ejecuta schema SQL)
-3. ES-Init (crea índice en Elasticsearch)
-4. API y Workers
+1.  Infraestructura (Postgres, Elasticsearch, RabbitMQ).
+2.  Migrator (ejecuta el esquema SQL inicial).
+3.  ES-Init (crea el índice `news` en Elasticsearch).
+4.  API y Workers (inician el procesamiento).
 
-### Probar el sistema
+---
+
+## 🧪 Probar el Sistema (Flujo Completo)
+
+Ejecuta el siguiente comando `curl` para enviar una noticia de prueba a la API de Ingesta y verifica el flujo:
 
 ```bash
 # Enviar una noticia de prueba
 curl -X POST http://localhost:8080/api/v1/news \
   -H "Content-Type: application/json" \
   -d '{
-    "url": "https://example.com/noticia1",
+    "url": "[https://example.com/noticia1](https://example.com/noticia1)",
     "title": "Noticia de prueba",
     "content": "Este es el contenido de la noticia de prueba",
     "abstract": "Resumen de la noticia",
@@ -37,23 +58,8 @@ curl -X POST http://localhost:8080/api/v1/news \
     "published_date": "2025-11-07T10:00:00Z"
   }'
 
-# Verificar en PostgreSQL
+# Verificar que se guardó en PostgreSQL
 docker exec data-storage-manager-postgres psql -U postgres -d newspress -c "SELECT id, title FROM news;"
 
-# Verificar en Elasticsearch
+# Verificar que se sincronizó en Elasticsearch
 curl -X GET "http://localhost:9200/news/_search?pretty"
-```
-
-## Endpoints Disponibles
-
-### API Ingestion
-
-- `GET /health` - Health check
-- `POST /api/v1/news` - Ingestar nueva noticia
-
-## Acceso a Servicios
-
-- **API Ingestion**: http://localhost:8080
-- **RabbitMQ Management**: http://localhost:15672 (guest/guest)
-- **Elasticsearch**: http://localhost:9200
-- **PostgreSQL**: localhost:5432 (postgres/postgres123)

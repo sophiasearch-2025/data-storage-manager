@@ -1,39 +1,40 @@
-# 🚀 Data-Storage-Manager
+## 🚀 NewsPress - Data Storage Manager
 
-> Este subsistema se encarga de gestionar la base de datos de Sophia Search con la información recopilada por el subsistema de Recopilación de Datos
+Sistema de gestión de almacenamiento de noticias con arquitectura de microservicios.
 
+## 🌟 Visión General
 
-## 📋 Tabla de Contenidos
+Este proyecto implementa una solución de almacenamiento y búsqueda para datos de noticias utilizando una arquitectura basada en colas de mensajes (microservicios).
 
-* [Interaccion con otros subsistemas](#interaccion-subsistemas)
-* [Documentacion Interna] (#documentacion-interna)
-* [Estado Subsistema] (#estado-subsistema)
+Para una visión completa, consulta los siguientes documentos:
+
+| Documento | Descripción |
+| :--- | :--- |
+| **[Arquitectura](arquitectura.md)** | Detalle de los componentes y el flujo de datos. |
+| **[Decisiones Arquitectónicas](decisiones.md)** | Justificación de la elección de tecnologías (PostgreSQL, Elasticsearch, RabbitMQ). |
+| **[Despliegue y Operación](deploy.md)** | Instrucciones de inicio rápido, endpoints y manejo de logs. |
+| **[Requisitos Técnicos](requisitos.md)** | Prerrequisitos de software y configuración de desarrollo. |
+
 ---
 
-## 💡 Interaccion con otros subsistemas
+## 💻 Desarrollo
 
-* Recopilacion de datos
-* Consulta y analisis
+Consulta la [sección de Desarrollo](deploy.md#desarrollo) para la estructura del proyecto y comandos de logs.
 
-## ✨ Documentacion interna
+### Acceso a Servicios
 
-Enlace a los documentos principales del subsistema:
+| Servicio | Acceso | Credenciales (si aplica) |
+| :--- | :--- | :--- |
+| **API Ingestion** | http://localhost:8080 | |
+| **RabbitMQ Management** | http://localhost:15672 | guest / guest |
+| **Elasticsearch** | http://localhost:9200 | |
+| **PostgreSQL** | localhost:5432 | postgres / postgres123 |
 
-- [Arquitectura] (./arquitectura.md)
-- [Decisiones-Tecnicas] (./decisiones.md)
-- [Requisitos] (./requisitos.md)
-- [Despliegue] (./deploy.md)
-- [Diagramas] (./diagramas
-)   
+## 🚧 Pendientes
 
-### Componentes
-
-- **PostgreSQL**: Base de datos relacional para almacenamiento persistente
-- **Elasticsearch**: Motor de búsqueda para consultas rápidas
-- **RabbitMQ**: Cola de mensajes para procesamiento asíncrono
-- **API Ingestion**: API REST para recibir noticias
-- **Worker Indexer**: Procesa noticias y las guarda en PostgreSQL
-- **Worker Sync**: Sincroniza noticias de PostgreSQL a Elasticsearch
-
-## 🛠️ Estado del subsistema
-- Listo para pruebas
+* [ ] API de consultas (query API)
+* [ ] Tests unitarios y de integración
+* [ ] Logging estructurado
+* [ ] Métricas y monitoreo
+* [ ] Autenticación y autorización
+* [ ] Dead letter queue para mensajes fallidos
