@@ -1,8 +1,3 @@
-## 5. 📎 requisitos.md
-
-Este archivo contiene una sección para los requisitos y la lista de endpoints.
-
-```markdown
 # 📎 Requisitos Técnicos y Endpoints
 
 ## Prerrequisitos de Desarrollo
