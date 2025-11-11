@@ -4,11 +4,11 @@ services:
     image: postgres:15-alpine
     container_name: data-storage-manager-postgres
     environment:
-      POSTGRES_DB: newspress
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres123
+      POSTGRES_DB: ${POSTGRES_DB:-newspress}
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     ports:
-      - "5432:5432"
+      - "127.0.0.1:5432:5432" # Solo accesible desde localhost
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
@@ -27,7 +27,7 @@ services:
       - xpack.security.enabled=false
       - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
     ports:
-      - "9200:9200"
+      - "127.0.0.1:9200:9200" # Solo accesible desde localhost
     volumes:
       - es_data:/usr/share/elasticsearch/data
     healthcheck:
@@ -43,11 +43,11 @@ services:
     image: rabbitmq:3.12-management-alpine
     container_name: data-storage-manager-rabbitmq
     environment:
-      RABBITMQ_DEFAULT_USER: guest
-      RABBITMQ_DEFAULT_PASS: guest
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_DEFAULT_USER:-guest}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_DEFAULT_PASS:-guest}
     ports:
-      - "5672:5672"
-      - "15672:15672"
+      - "127.0.0.1:5672:5672" # Solo accesible desde localhost
+      - "127.0.0.1:15672:15672" # Management UI solo desde localhost
     volumes:
       - rabbitmq_data:/var/lib/rabbitmq
     healthcheck:
@@ -68,11 +68,11 @@ services:
     volumes:
       - ./database/migrations/postgres:/migrations
     environment:
-      PGPASSWORD: postgres123
+      PGPASSWORD: ${POSTGRES_PASSWORD}
     command: >
       sh -c "
         echo 'Running database migrations...' &&
-        psql -h postgres -U postgres -d newspress -f /migrations/001_initial_schema.sql &&
+        psql -h postgres -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-newspress} -f /migrations/001_initial_schema.sql &&
         echo 'Migrations completed successfully!'
       "
     networks:
@@ -128,9 +128,10 @@ services:
       - RABBITMQ_URL=amqp://guest:guest@rabbitmq:5672/
       - POSTGRES_HOST=postgres
       - POSTGRES_PORT=5432
-      - POSTGRES_DB=newspress
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=postgres123
+      - POSTGRES_DB=${POSTGRES_DB:-newspress}
+      - POSTGRES_USER=${POSTGRES_USER:-postgres}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
     networks:
       - newspress-network
     restart: unless-stopped
@@ -156,10 +157,11 @@ services:
       - RABBITMQ_URL=amqp://guest:guest@rabbitmq:5672/
       - POSTGRES_HOST=postgres
       - POSTGRES_PORT=5432
-      - POSTGRES_DB=newspress
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=postgres123
+      - POSTGRES_DB=${POSTGRES_DB:-newspress}
+      - POSTGRES_USER=${POSTGRES_USER:-postgres}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
       - ELASTICSEARCH_URL=http://elasticsearch:9200
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
     networks:
       - newspress-network
     restart: unless-stopped

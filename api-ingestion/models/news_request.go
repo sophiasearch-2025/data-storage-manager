@@ -1,10 +1,9 @@
 package models
 
-// NewsRequest - Formato directo del scraper (campos en español)
 type NewsRequest struct {
 	URL            string   `json:"url" binding:"required"`
 	Titulo         string   `json:"titulo" binding:"required"`
-	Fecha          string   `json:"fecha" binding:"required"` // Spanish date: "Martes 16 septiembre de 2025 | 23:01"
+	Fecha          string   `json:"fecha" binding:"required"`
 	Tags           []string `json:"tags"`
 	Autor          string   `json:"autor"`
 	DescAutor      string   `json:"desc_autor"`

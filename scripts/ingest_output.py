@@ -11,6 +11,7 @@ from typing import Any, Dict, List
 
 import requests
 
+
 def ingest_articles(
     output_file: str, api_url: str = "http://localhost:8080", delay: float = 0.1
 ):
@@ -29,21 +30,21 @@ def ingest_articles(
         with open(output_file, "r", encoding="utf-8") as f:
             articles = json.load(f)
     except Exception as e:
-        print(f"❌ Error leyendo archivo: {e}")
+        print(f"Error leyendo archivo: {e}")
         sys.exit(1)
 
     if not isinstance(articles, list):
-        print("❌ Error: El archivo debe contener un array JSON")
+        print("Error: El archivo debe contener un array JSON")
         sys.exit(1)
 
-    print(f"✅ {len(articles)} artículos encontrados\n")
+    print(f"{len(articles)} artículos encontrados\n")
 
     # Health check
     print(f"🏥 Verificando API en {api_url}...")
     try:
         response = requests.get(f"{api_url}/health", timeout=5)
         if response.status_code == 200:
-            print("✅ API disponible\n")
+            print("API disponible\n")
         else:
             print(f"❌ API respondió con status {response.status_code}")
             sys.exit(1)
@@ -75,7 +76,7 @@ def ingest_articles(
 
             if response.status_code == 202:
                 job_id = response.json().get("job_id", "N/A")
-                print(f"✅ {job_id}")
+                print(f"{job_id}")
                 success += 1
             else:
                 error_msg = response.text[:100]
@@ -103,8 +104,8 @@ def ingest_articles(
     print("\n📊 RESUMEN DE INGESTA")
     print("=" * 80)
     print(f"Total:    {len(articles)}")
-    print(f"Exitosos: {success} ✅")
-    print(f"Fallidos: {failed} ❌")
+    print(f"Exitosos: {success}")
+    print(f"Fallidos: {failed}")
     print(f"Tasa de éxito: {success / len(articles) * 100:.1f}%")
 
     if errors:
@@ -112,8 +113,8 @@ def ingest_articles(
         for error in errors[:5]:
             print(f"  • {error['url']}: {error.get('error', 'Unknown')}")
 
-    print("\n💡 Monitorear procesamiento:")
-    print("   docker-compose logs -f worker-indexer worker-sync")
+    print("\nMonitorear procesamiento:")
+    print("docker-compose logs -f worker-indexer worker-sync")
 
     return success, failed
 
@@ -136,7 +137,6 @@ if __name__ == "__main__":
         default=0.1,
         help="Delay entre requests en segundos (default: 0.1)",
     )
-                       help='Delay entre requests en segundos (default: 0.1)')
 
     args = parser.parse_args()
 

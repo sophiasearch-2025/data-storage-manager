@@ -6,9 +6,8 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
-	"github.com/newspress/api-ingestion/models"
-	"github.com/newspress/api-ingestion/services"
-	"github.com/newspress/api-ingestion/utils"
+	"github.com/data-storage-manager/api-ingestion/models"
+	"github.com/data-storage-manager/api-ingestion/services"
 )
 
 type IngestionHandler struct {

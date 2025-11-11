@@ -4,9 +4,9 @@ import (
 	"log"
 
 	"github.com/gin-gonic/gin"
-	"github.com/newspress/api-ingestion/config"
-	"github.com/newspress/api-ingestion/handlers"
-	"github.com/newspress/api-ingestion/services"
+	"github.com/data-storage-manager/api-ingestion/config"
+	"github.com/data-storage-manager/api-ingestion/handlers"
+	"github.com/data-storage-manager/api-ingestion/services"
 )
 
 func main() {

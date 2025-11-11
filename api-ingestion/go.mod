@@ -1,4 +1,4 @@
-module github.com/newspress/api-ingestion
+module github.com/data-storage-manager/api-ingestion
 
 go 1.21
 

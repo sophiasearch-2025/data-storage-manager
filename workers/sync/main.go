@@ -42,11 +42,12 @@ type MediaSource struct {
 }
 
 type SyncWorker struct {
-	db      *sql.DB
-	es      *elasticsearch.Client
-	conn    *amqp.Connection
-	channel *amqp.Channel
-	config  *common.Config
+	db           *sql.DB
+	es           *elasticsearch.Client
+	conn         *amqp.Connection
+	channel      *amqp.Channel
+	config       *common.Config
+	retryHandler *common.RetryHandler
 }
 
 func NewSyncWorker(cfg *common.Config) (*SyncWorker, error) {
@@ -87,20 +88,21 @@ func NewSyncWorker(cfg *common.Config) (*SyncWorker, error) {
 		return nil, fmt.Errorf("failed to open channel: %v", err)
 	}
 
-	// Declare sync_queue
-	_, err = ch.QueueDeclare("sync_queue", true, false, false, false, nil)
+	// Configurar retry handler con DLQ para sync_queue
+	retryHandler, err := common.NewRetryHandler(ch, "sync_queue", 3)
 	if err != nil {
-		return nil, fmt.Errorf("failed to declare sync queue: %v", err)
+		return nil, fmt.Errorf("failed to setup retry handler: %v", err)
 	}
 
 	log.Println("Connected to PostgreSQL, Elasticsearch and RabbitMQ")
 
 	return &SyncWorker{
-		db:      db,
-		es:      es,
-		conn:    conn,
-		channel: ch,
-		config:  cfg,
+		db:           db,
+		es:           es,
+		conn:         conn,
+		channel:      ch,
+		config:       cfg,
+		retryHandler: retryHandler,
 	}, nil
 }
 
@@ -220,9 +222,11 @@ func (sw *SyncWorker) deleteDocument(newsID string) error {
 func (sw *SyncWorker) processMessage(msg amqp.Delivery) error {
 	var syncMsg SyncMessage
 
+	// Intentar unmarshal del JSON
 	if err := json.Unmarshal(msg.Body, &syncMsg); err != nil {
 		log.Printf("Failed to unmarshal sync message: %v", err)
-		msg.Nack(false, false) // Don't requeue malformed messages
+		// Error no recuperable (mensaje malformado) - enviar a DLQ
+		sw.retryHandler.HandleError(msg, err, false)
 		return err
 	}
 
@@ -236,17 +240,20 @@ func (sw *SyncWorker) processMessage(msg amqp.Delivery) error {
 		err = sw.deleteDocument(syncMsg.NewsID)
 	default:
 		log.Printf("Unknown action: %s", syncMsg.Action)
-		msg.Nack(false, false)
-		return fmt.Errorf("unknown action: %s", syncMsg.Action)
+		// Error no recuperable (acción desconocida) - enviar a DLQ
+		err = fmt.Errorf("unknown action: %s", syncMsg.Action)
+		sw.retryHandler.HandleError(msg, err, false)
+		return err
 	}
 
 	if err != nil {
 		log.Printf("Sync failed: %v", err)
-		msg.Nack(false, true) // Requeue for retry
+		// Error recuperable (problema con DB o ES) - reintentar
+		sw.retryHandler.HandleError(msg, err, true)
 		return err
 	}
 
-	msg.Ack(false)
+	sw.retryHandler.AckSuccess(msg)
 	return nil
 }
 

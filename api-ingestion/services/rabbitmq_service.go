@@ -24,10 +24,8 @@ func NewRabbitMQService(url string) (*RabbitMQService, error) {
 		return nil, fmt.Errorf("failed to open channel: %v", err)
 	}
 
-	_, err = ch.QueueDeclare("ingestion_queue", true, false, false, false, nil)
-	if err != nil {
-		return nil, fmt.Errorf("failed to declare queue: %v", err)
-	}
+	// NOTA: La cola ingestion_queue es creada por el worker-indexer con DLX configurado
+	// La API solo publica mensajes, no necesita declarar la cola
 
 	return &RabbitMQService{
 		conn:    conn,
