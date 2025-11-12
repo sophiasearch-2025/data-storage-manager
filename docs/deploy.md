@@ -63,3 +63,31 @@ docker exec data-storage-manager-postgres psql -U postgres -d newspress -c "SELE
 
 # Verificar que se sincronizó en Elasticsearch
 curl -X GET "http://localhost:9200/news/_search?pretty"
+
+## 🛑 Detener y Limpiar
+
+* **Detener servicios (manteniendo datos):** Detiene los contenedores, pero conserva los volúmenes de datos de PostgreSQL y Elasticsearch.
+    ```bash
+    docker compose down
+    ```
+
+* **Detener y eliminar volúmenes (PELIGRO: elimina datos permanentes):** Elimina contenedores, redes **y los volúmenes de datos** persistentes. Úsalo solo cuando desees reiniciar el proyecto desde cero.
+    ```bash
+    docker compose down -v
+    ```
+
+---
+
+## 🔍 Logs y Troubleshooting
+
+Para monitorear el estado y depurar problemas en los servicios:
+
+* **Ver logs de todos los servicios en tiempo real:**
+    ```bash
+    docker compose logs -f
+    ```
+
+* **Ver logs de un servicio específico** (reemplaza `api-ingestion` por el nombre del servicio que quieras inspeccionar):
+    ```bash
+    docker compose logs -f api-ingestion
+    ```
