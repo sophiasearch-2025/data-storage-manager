@@ -4,11 +4,7 @@ Este sistema utiliza **Docker Compose** para orquestar la infraestructura de mic
 
 ## 1. ⚙️ Prerrequisitos de Entorno
 
-Asegúrate de tener instalados y configurados los siguientes requisitos:
-
-* **Docker:** El motor principal debe estar instalado y el servicio del demonio debe estar corriendo.
-* **Docker Compose (Plugin):** Necesario para la orquestación.
-
+Antes de comenzar, asegúrate de haber instalado todos los requisitos de software listados en el documento **[Requisitos Técnicos](requisitos.md)**.
 ---
 
 ## 2. 🚀 Levantar el Sistema (Despliegue Local)
