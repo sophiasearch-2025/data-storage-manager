@@ -1,92 +1,105 @@
 # 🚀 Despliegue y Operación
 
-Este sistema está diseñado para ser desplegado fácilmente utilizando Docker Compose.
+Este sistema utiliza **Docker Compose** para orquestar la infraestructura de microservicios. Todas las operaciones de despliegue se ejecutan desde la **raíz del repositorio**.
 
-## 🛠️ Inicio Rápido
+## 1. ⚙️ Prerrequisitos de Entorno
 
-### Prerequisitos
+Asegúrate de tener instalados y configurados los siguientes requisitos:
 
-Estos requisitos son necesarios para levantar el sistema de forma local:
+* **Docker:** El motor principal debe estar instalado y el servicio del demonio debe estar corriendo.
+* **Docker Compose (Plugin):** Necesario para la orquestación.
 
-* **Docker**
-* **Docker Compose** (Plugin)
+---
 
-### Levantar el sistema
+## 2. 🚀 Levantar el Sistema (Despliegue Local)
 
-1.  **Clonar variables de entorno:** Copia el archivo de ejemplo para crear tu configuración local.
+Ejecuta estos comandos en orden para poner el sistema en línea:
+
+1.  **Configuración de Variables de Entorno:**
+    Copia el archivo de ejemplo para crear tu configuración local. Este archivo (`.env`) es vital para puertos, credenciales y URLs de RabbitMQ.
     ```bash
     cp .env.example .env
     ```
 
-2.  **Iniciar todos los servicios:**
+2.  **Iniciar Todos los Servicios:**
+    El comando construye (si es necesario) e inicia todos los contenedores en modo *detached* (segundo plano).
     ```bash
     docker compose up -d
     ```
 
-3.  **Verificar que todos los servicios estén corriendo:**
+3.  **Verificación Rápida:**
+    Confirma que todos los contenedores han iniciado correctamente.
     ```bash
     docker compose ps
     ```
+    > **Resultado Esperado:** Todos los servicios (APIs, Workers, PostgreSQL, etc.) deben mostrar el estado **`Up`**.
 
-### Orden de Inicio
+### Flujo y Orden de Inicio (Anticorrupción)
 
-El `docker-compose.yml` maneja automáticamente la dependencia de los servicios, asegurando el orden correcto:
+El `docker-compose.yml` asegura un orden de arranque estricto para evitar fallos de conexión:
 
-1.  Infraestructura (Postgres, Elasticsearch, RabbitMQ).
-2.  Migrator (ejecuta el esquema SQL inicial).
-3.  ES-Init (crea el índice `news` en Elasticsearch).
-4.  API y Workers (inician el procesamiento).
+1.  **Infraestructura:** (Postgres, Elasticsearch, RabbitMQ) se inician primero.
+2.  **Inicialización:** `Migrator` (ejecuta el esquema SQL) y **`ES-Init`** (crea el índice `news` en Elasticsearch) se ejecutan **una sola vez**.
+3.  **Aplicaciones:** `API` y `Workers` se inician solo después de que la infraestructura y la inicialización hayan finalizado.
 
 ---
 
-## 🧪 Probar el Sistema (Flujo Completo)
+## 3. 🧪 Pruebas Funcionales (Post-Deploy)
 
-Ejecuta el siguiente comando `curl` para enviar una noticia de prueba a la API de Ingesta y verifica el flujo:
+Una vez que el sistema está `Up`, verifica el flujo completo (API → RabbitMQ → PostgreSQL → Elasticsearch).
 
-```bash
-# Enviar una noticia de prueba
-curl -X POST http://localhost:8080/api/v1/news \
-  -H "Content-Type: application/json" \
-  -d '{
-    "url": "[https://example.com/noticia1](https://example.com/noticia1)",
-    "title": "Noticia de prueba",
-    "content": "Este es el contenido de la noticia de prueba",
-    "abstract": "Resumen de la noticia",
-    "author": "Autor de Prueba",
-    "media_outlet": "El Medio",
-    "country": "chile",
-    "published_date": "2025-11-07T10:00:00Z"
-  }'
+1.  **Ingestar Noticia:** Envía una noticia de prueba a la API. El sistema debe responder con `202 Accepted` ya que el procesamiento es asíncrono.
+    ```bash
+    curl -X POST http://localhost:8080/api/v1/news \
+      -H "Content-Type: application/json" \
+      -d '{
+        "url": "[https://example.com/noticia1](https://example.com/noticia1)",
+        "title": "Noticia de prueba",
+        "content": "Este es el contenido de la noticia de prueba",
+        "abstract": "Resumen de la noticia",
+        "author": "Autor de Prueba",
+        "media_outlet": "El Medio",
+        "country": "chile",
+        "published_date": "2025-11-07T10:00:00Z"
+      }'
+    ```
 
-# Verificar que se guardó en PostgreSQL
-docker exec data-storage-manager-postgres psql -U postgres -d newspress -c "SELECT id, title FROM news;"
+2.  **Verificar en PostgreSQL:** Comprueba si el `Worker Indexer` guardó la noticia en la tabla `news`.
+    ```bash
+    docker exec data-storage-manager-postgres psql -U postgres -d newspress -c "SELECT id, title FROM news;"
+    ```
 
-# Verificar que se sincronizó en Elasticsearch
-curl -X GET "http://localhost:9200/news/_search?pretty"
-```
-## 🛑 Detener y Limpiar
+3.  **Verificar en Elasticsearch:** Confirma que el `Worker Sync` sincronizó la noticia al motor de búsqueda.
+    ```bash
+    curl -X GET "http://localhost:9200/news/_search?pretty"
+    ```
 
-* **Detener servicios (manteniendo datos):** Detiene los contenedores, pero conserva los volúmenes de datos de PostgreSQL y Elasticsearch.
+---
+
+## 4. 🛑 Detener y Limpiar
+
+* **Detener servicios (manteniendo datos):** Detiene los contenedores, pero **conserva los volúmenes de datos**. Es el comando más seguro para detener el desarrollo diario.
     ```bash
     docker compose down
     ```
 
-* **Detener y eliminar volúmenes (PELIGRO: elimina datos permanentes):** Elimina contenedores, redes **y los volúmenes de datos** persistentes. Úsalo solo cuando desees reiniciar el proyecto desde cero.
+* **Detener y eliminar volúmenes (PELIGRO: elimina datos permanentes):** Elimina contenedores, redes **y los volúmenes de datos** persistentes (PostgreSQL, Elasticsearch). Úsalo solo cuando desees reiniciar el proyecto desde cero.
     ```bash
     docker compose down -v
     ```
 
 ---
 
-## 🔍 Logs y Troubleshooting
+## 5. 🔍 Logs y Troubleshooting
 
-Para monitorear el estado y depurar problemas en los servicios:
+Para monitorear el estado en tiempo real y depurar problemas:
 
 * **Ver logs de todos los servicios en tiempo real:**
     ```bash
     docker compose logs -f
     ```
 
-* **Ver logs de un servicio específico** (reemplaza `api-ingestion` por el nombre del servicio que quieras inspeccionar):
+* **Ver logs de un servicio específico:** Útil para aislar errores. Reemplaza `api-ingestion` por el nombre del servicio a inspeccionar.
     ```bash
     docker compose logs -f api-ingestion
+    ```
