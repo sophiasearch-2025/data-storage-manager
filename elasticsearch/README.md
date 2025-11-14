@@ -102,7 +102,72 @@ python index_random_news.py
 ```bash
 deactivate
 ```
+## Buscador de noticias con Elasticsearch y Python
+* Este script (`buscar_noticias.py`) permite realizar distintas **búsquedas sobre un índice de noticias en Elasticsearch** usando Python.
 
+1. Ejecutar script de busqueda:
+
+```bash
+python3 buscar_noticias.py
+```
+* El script ejecuta algunas búsquedas de ejemplo y muestra los resultados por consola.
+
+## Estructura básica de las búsquedas (queries)
+Todas las búsquedas se basan en la API search de Elasticsearch:
+```bash
+resp = es.search(index=INDEX, body=query, size=size)
+```
+* index: el índice donde se buscan datos (`noticias`).
+
+* body: un diccionario query con la consulta en formato Elasticsearch.
+
+* size: máximo número de resultados a devolver.
+
+## Funciones de búsqueda incluidas (en proceso)
+* 1.- `buscar_texto_libre(texto, size=10)`
+
+Búsqueda tipo Google sobre varios campos.
+
+Qué hace `multi_match`:
+Busca el texto en varios campos a la vez (`titulo`, `texto_noticia`, `medio.nombre`).
+
+Qué hace `fuzziness: "AUTO"` permite pequeños errores ortográficos (búsqueda difusa).
+
+Uso de ejemplo:
+```bash
+buscar_texto_libre("incendio")
+buscar_texto_libre("Valdivia")
+```
+
+* 2.- `buscar_por_pais(pais, size=10)`
+
+Filtra noticias según el país del medio.
+
+Qué hace `match`:
+Busca documentos donde `medio.pais` contenga el término dado.
+
+Uso de ejemplo:
+```bash
+buscar_por_pais("Chile")
+```
+
+* 3.- `buscar_por_rango_fechas(desde, hasta=None, size=10)`
+
+Permite buscar noticias en un rango de fechas usando el campo fecha_subida.
+
+Formato fecha: 'YYYY-MM-DD'
+
+Qué hace range: 
+
+`gte`: mayor o igual a la fecha `desde`.
+
+`lte`: menor o igual a la fecha `hasta` (opcional).
+
+Uso de ejemplo:
+```bash
+buscar_por_rango_fechas("2025-01-01")
+buscar_por_rango_fechas("2025-01-01", "2025-12-31")
+```
 ## Notas
 
 * Los datos de ElasticSearch se guardan en el volumen `es_data`.
